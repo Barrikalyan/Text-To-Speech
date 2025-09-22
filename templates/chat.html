@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Text to Speech ChatGPT</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      height: 100vh;
+      background-color: #343541;
+      color: #e5e5e5;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.light-mode { background: #f1f1f1; color: #121212; }
+
+    .sidebar {
+      width: 260px;
+      background-color: #202123;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid #2f2f33;
+    }
+    .sidebar-top { padding: 10px; }
+    .sidebar-top button {
+      width: 100%;
+      padding: 12px;
+      background: #2a2b32;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      text-align: left;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .sidebar-top button:hover { background: #3a3b44; }
+    .sidebar-history {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    .sidebar-history div {
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 5px;
+      background: #2a2b32;
+    }
+    .sidebar-history div:hover { background: #3a3b44; }
+    .profile {
+      padding: 12px;
+      border-top: 1px solid #2f2f33;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1f1f23;
+    }
+    .profile img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #19c37d;
+    }
+    .profile-info { display: flex; flex-direction: column; }
+    .profile-info span { font-size: 14px; font-weight: 500; }
+    .profile-info a {
+      font-size: 12px;
+      color: #9ae6c9;
+      text-decoration: none;
+    }
+
+    .main { flex: 1; display: flex; flex-direction: column; }
+    .header {
+      padding: 12px 20px;
+      background: #40414f;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #2f2f33;
+    }
+    .header h2 { margin: 0; font-size: 18px; color: #19c37d; }
+    .controls select, .controls button {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      background: #2a2b32;
+      color: #fff;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+    .user-msg {
+      background: #2a2b32;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .bot-msg {
+      background: #444654;
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom-left-radius: 4px;
+    }
+
+    .play-btn {
+      background: #19c37d;
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: white;
+      font-size: 16px;
+    }
+    .play-btn:hover { background: #13a76a; }
+
+    .chat-footer {
+      padding: 12px 20px;
+      background: #40414f;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid #2f2f33;
+      position: relative;
+    }
+    .chat-footer input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 20px;
+      border: none;
+      background: #2a2b32;
+      color: white;
+      font-size: 14px;
+    }
+    .chat-footer button {
+      padding: 10px 16px;
+      background: #19c37d;
+      border: none;
+      border-radius: 20px;
+      color: white;
+      cursor: pointer;
+    }
+    .chat-footer button:hover { background: #13a76a; }
+
+    .upload { position: relative; }
+    .upload-label { font-size: 22px; cursor: pointer; }
+    .upload-options {
+      display: none;
+      position: absolute;
+      bottom: 50px;
+      left: 0;
+      background: #2a2b32;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+    .upload-options button {
+      display: block;
+      width: 100%;
+      background: #2a2b32;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+    }
+    .upload-options button:hover { background: #3a3b44; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <button id="newChat">+ New Chat</button>
+      <button id="searchChat">🔍 Search</button>
+      <button id="aiHelp">🤖 AI</button>
+      <button id="logoutBtn">🚪 Logout</button>
+    </div>
+    <div class="sidebar-history" id="chatHistoryList"></div>
+    <div class="profile">
+      <img src="https://via.placeholder.com/40" alt="Profile">
+      <div class="profile-info">
+        <span>user</span>
+        <a href="#">email@example.com</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Chat -->
+  <div class="main">
+    <div class="header">
+      <h2>Text to Speech Assistant</h2>
+      <div class="controls">
+        <select id="emotionSelect">
+          <option value="neutral">Neutral</option>
+          <option value="happy">Happy</option>
+          <option value="sad">Sad</option>
+          <option value="angry">Angry</option>
+          <option value="excited">Excited</option>
+        </select>
+        <select id="voiceSelect">
+          <option value="ROMJ9yK1NAMuu1ggrjDW">Rachel 👩</option>
+          <option value="bIHbv24MWmeRgasZH58o">Hope 👩</option>
+          <option value="cgSgspJ2msm6clMCkdW9">Johnny 👨</option>
+          <option value="IKne3meq5aSn9XLyUdCD">Jessica 👩</option>
+        </select>
+        <button id="toggleTheme">🌓</button>
+      </div>
+    </div>
+
+    <div id="chatBox" class="chat-box"></div>
+
+    <div class="chat-footer">
+      <div class="upload">
+        <span class="upload-label">➕</span>
+        <div class="upload-options" id="uploadOptions">
+          <button>📄 PDF</button>
+          <button>📷 Image</button>
+          <button>📝 Text</button>
+        </div>
+      </div>
+      <input type="text" id="userInput" placeholder="Type your message...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const chatBox = document.getElementById("chatBox");
+    const emotionSelect = document.getElementById("emotionSelect");
+    const voiceSelect = document.getElementById("voiceSelect");
+    const uploadLabel = document.querySelector(".upload-label");
+    const uploadOptions = document.getElementById("uploadOptions");
+    const toggleTheme = document.getElementById("toggleTheme");
+    const newChatBtn = document.getElementById("newChat");
+    const chatHistoryList = document.getElementById("chatHistoryList");
+
+    let chats = [];
+    let currentChat = [];
+
+    // 🎙️ Add message to chat UI
+    // 🎙️ Add message to chat UI
+function addMessage(text, isUser, autoPlay=false) {
+  const msgDiv = document.createElement("div");
+  msgDiv.className = "message " + (isUser ? "user-msg" : "bot-msg");
+
+  if (isUser) {
+    msgDiv.textContent = text;
+  } else {
+    const playBtn = document.createElement("button");
+    playBtn.className = "play-btn";
+    playBtn.innerHTML = "🔊";
+    playBtn.onclick = () => {
+      const audio = new Audio("/play?t=" + new Date().getTime());
+      audio.play();
+    };
+    msgDiv.textContent = text + " ";
+    msgDiv.appendChild(playBtn);
+
+    // 🎧 Auto play if requested
+    if (autoPlay) {
+      const audio = new Audio("/play?t=" + new Date().getTime());
+      audio.play();
+    }
+  }
+
+  chatBox.appendChild(msgDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  currentChat.push({ text, isUser });
+}
+
+// 📤 Handle sending message
+async function handleSend() {
+  const text = userInput.value.trim();
+  if (text) {
+    addMessage(text, true);
+
+    // Send to Flask backend for ElevenLabs TTS
+    const formData = new FormData();
+    formData.append("text", text);
+    formData.append("emotion", emotionSelect.value);
+    formData.append("voice", voiceSelect.value);
+
+    await fetch("/speak", {
+      method: "POST",
+      body: formData
+    });
+
+    // Bot reply (with autoPlay = true)
+    setTimeout(() => addMessage(text, false, true), 300);
+
+    userInput.value = "";
+  }
+}
+
+
+    sendBtn.onclick = handleSend;
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleSend();
+    });
+
+    newChatBtn.onclick = () => {
+      if (currentChat.length > 0) {
+        chats.push(currentChat);
+        currentChat = [];
+        updateHistoryUI();
+      }
+      chatBox.innerHTML = "";
+    };
+
+    function updateHistoryUI() {
+      chatHistoryList.innerHTML = "";
+      chats.forEach((chat, index) => {
+        const div = document.createElement("div");
+        div.textContent = "Chat " + (index + 1);
+        div.onclick = () => loadChat(index);
+        chatHistoryList.appendChild(div);
+      });
+    }
+
+    function loadChat(index) {
+      chatBox.innerHTML = "";
+      chats[index].forEach(msg => addMessage(msg.text, msg.isUser));
+    }
+
+    uploadLabel.addEventListener("click", () => {
+      uploadOptions.style.display =
+        uploadOptions.style.display === "block" ? "none" : "block";
+    });
+
+    toggleTheme.onclick = () => {
+      document.body.classList.toggle("light-mode");
+    };
+
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.removeItem("vs_user");
+      window.location.href = "login.html";
+    };
+  </script>
+</body>
+</html>
